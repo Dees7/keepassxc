@@ -18,7 +18,10 @@
 #ifndef KEEPASSXC_GUITOOLS_H
 #define KEEPASSXC_GUITOOLS_H
 
+#include <QComboBox>
 #include <QEvent>
+#include <QKeyEvent>
+#include <QLineEdit>
 #include <QList>
 #include <QWidget>
 
@@ -48,6 +51,59 @@ protected:
         if (event->type() == QEvent::Wheel && widget && !widget->hasFocus()) {
             event->ignore();
             return true;
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
+
+/**
+ * Helper class to make the Home/End keys move the cursor to the start/end of the
+ * line in a QLineEdit. On macOS, Qt maps the bare Home/End keys to "move to
+ * start/end of document", which a single-line edit ignores, so the keys appear
+ * to do nothing. Holding Shift extends the selection, matching the behaviour on
+ * the other platforms.
+ */
+class LineEditHomeEndEventFilter : public QObject
+{
+public:
+    explicit LineEditHomeEndEventFilter(QObject* parent)
+        : QObject(parent){};
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override
+    {
+        if (event->type() == QEvent::KeyPress) {
+            // An editable QComboBox keeps the keyboard focus on the combo box itself
+            // (its line edit's focus proxy points back to the combo), so the key event
+            // is delivered to the QComboBox rather than to its QLineEdit. Resolve the
+            // inner line edit in that case.
+            auto* lineEdit = qobject_cast<QLineEdit*>(obj);
+            if (!lineEdit) {
+                if (auto* comboBox = qobject_cast<QComboBox*>(obj)) {
+                    lineEdit = comboBox->lineEdit();
+                }
+            }
+            // Skip read-only edits: there is nothing to navigate for editing, and
+            // some read-only QLineEdit subclasses (e.g. the auto-type shortcut
+            // recorder) repurpose key presses, so we must not swallow them.
+            if (lineEdit && !lineEdit->isReadOnly()) {
+                auto* keyEvent = static_cast<QKeyEvent*>(event);
+                const bool select = keyEvent->modifiers().testFlag(Qt::ShiftModifier);
+                // Only translate plain Home/End (optionally with Shift); leave
+                // other modifier combinations (e.g. Cmd+Home) untouched.
+                const auto otherModifiers =
+                    keyEvent->modifiers() & ~Qt::ShiftModifier & ~Qt::KeypadModifier;
+                if (otherModifiers == Qt::NoModifier) {
+                    if (keyEvent->key() == Qt::Key_Home) {
+                        lineEdit->home(select);
+                        return true;
+                    }
+                    if (keyEvent->key() == Qt::Key_End) {
+                        lineEdit->end(select);
+                        return true;
+                    }
+                }
+            }
         }
         return QObject::eventFilter(obj, event);
     }
