@@ -202,6 +202,7 @@ set(gui_SOURCES
         gui/widgets/KPToolBar.cpp
         gui/widgets/PopupHelpWidget.cpp
         gui/widgets/ShortcutWidget.cpp
+        gui/widgets/TextEditSearchBar.cpp
         gui/wizard/ImportWizard.cpp
         gui/wizard/ImportWizardPageReview.cpp
         gui/wizard/ImportWizardPageSelect.cpp

@@ -58,6 +58,7 @@
 #include "gui/GuiTools.h"
 #include "gui/Icons.h"
 #include "gui/MessageBox.h"
+#include "gui/widgets/TextEditSearchBar.h"
 #include "gui/entry/AutoTypeAssociationsModel.h"
 #include "gui/entry/EntryAttributesModel.h"
 #include "gui/entry/EntryHistoryModel.h"
@@ -220,6 +221,11 @@ void EditEntryWidget::setupMain()
     });
 
     connect(m_mainUi->revealNotesButton, &QToolButton::clicked, this, &EditEntryWidget::toggleHideNotes);
+
+    // In-notes find bar: hidden until the Find shortcut is pressed inside the notes
+    // field (handled by the bar itself once the notes edit is attached).
+    m_mainUi->notesSearchBar->attachTextEdit(m_mainUi->notesEdit);
+    m_mainUi->notesSearchBar->hide();
 
     m_mainUi->expirePresets->setMenu(createPresetsMenu());
     connect(m_mainUi->expirePresets->menu(), SIGNAL(triggered(QAction*)), this, SLOT(useExpiryPreset(QAction*)));
@@ -917,6 +923,9 @@ void EditEntryWidget::toggleHideNotes(bool visible)
 {
     m_mainUi->notesEdit->setVisible(visible);
     m_mainUi->revealNotesButton->setIcon(icons()->onOffIcon("password-show", visible));
+    if (!visible) {
+        m_mainUi->notesSearchBar->hideBar();
+    }
 }
 
 Entry* EditEntryWidget::currentEntry() const
@@ -946,6 +955,9 @@ void EditEntryWidget::loadEntry(Entry* entry,
             connect(m_entry, &Entry::modified, this, [this] { m_entryModifiedTimer.start(); });
         }
     }
+
+    // Always start with the notes find bar hidden; it reopens only on the Find shortcut.
+    m_mainUi->notesSearchBar->hideBar();
 
     setForms(entry);
     setReadOnly(m_history);
