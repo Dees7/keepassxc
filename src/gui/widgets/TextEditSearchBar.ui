@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TextEditSearchBar</class>
+ <widget class="QWidget" name="TextEditSearchBar">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>500</width>
+    <height>32</height>
+   </rect>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>2</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QLineEdit" name="searchEdit">
+     <property name="accessibleName">
+      <string>Find in notes</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="matchCountLabel">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="caseSensitiveButton">
+     <property name="toolTip">
+      <string>Case sensitive</string>
+     </property>
+     <property name="accessibleName">
+      <string>Case sensitive</string>
+     </property>
+     <property name="text">
+      <string notr="true">Aa</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="wholeWordsButton">
+     <property name="toolTip">
+      <string>Whole words only</string>
+     </property>
+     <property name="accessibleName">
+      <string>Whole words only</string>
+     </property>
+     <property name="text">
+      <string notr="true">W</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="previousButton">
+     <property name="toolTip">
+      <string>Previous match (Shift+Enter)</string>
+     </property>
+     <property name="accessibleName">
+      <string>Previous match</string>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="nextButton">
+     <property name="toolTip">
+      <string>Next match (Enter)</string>
+     </property>
+     <property name="accessibleName">
+      <string>Next match</string>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QToolButton" name="closeButton">
+     <property name="toolTip">
+      <string>Close search (Esc)</string>
+     </property>
+     <property name="accessibleName">
+      <string>Close search</string>
+     </property>
+     <property name="autoRaise">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
