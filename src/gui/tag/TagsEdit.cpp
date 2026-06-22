@@ -449,6 +449,16 @@ struct TagsEdit::Impl
         }
     }
 
+    void removeForwardOne()
+    {
+        if (hasSelection()) {
+            removeSelection();
+        } else {
+            // remove() is a no-op when the cursor is already at the end
+            currentText().remove(cursor, 1);
+        }
+    }
+
     void selectAll()
     {
         select_start = 0;
@@ -847,6 +857,14 @@ void TagsEdit::keyPressEvent(QKeyEvent* event)
                 impl->removeBackwardOne();
             } else if (impl->editing_index > 0) {
                 impl->editPreviousTag();
+            }
+            event->accept();
+            break;
+        case Qt::Key_Delete:
+            if (!impl->currentText().isEmpty()) {
+                impl->removeForwardOne();
+            } else {
+                impl->editNextTag();
             }
             event->accept();
             break;
