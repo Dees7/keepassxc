@@ -21,6 +21,7 @@
 
 #include "core/Bootstrap.h"
 #include "core/Tools.h"
+#include "gui/GuiTools.h"
 #include "gui/MainWindow.h"
 #include "gui/MessageBox.h"
 #include "gui/osutils/OSUtils.h"
@@ -133,6 +134,14 @@ Application::Application(int& argc, char** argv)
             applyTheme();
         }
     });
+
+#ifdef Q_OS_MACOS
+    // On macOS the bare Home/End keys are mapped to "move to start/end of document",
+    // which single-line edits ignore, so the keys appear dead in every QLineEdit
+    // (title, username, password, URL, search, ...). Install a global filter to make
+    // them move the cursor to the start/end of the line instead.
+    installEventFilter(new LineEditHomeEndEventFilter(this));
+#endif
 }
 
 Application::~Application()
