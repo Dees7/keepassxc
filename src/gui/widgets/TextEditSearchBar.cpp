@@ -74,6 +74,17 @@ void TextEditSearchBar::showBar()
         return;
     }
 
+    // Override the edit's selection colours with a bright pair so the active
+    // match stands out (the theme selection colour may be too dim on dark themes).
+    if (!m_selectionColorsOverridden) {
+        m_savedTextEditPalette = m_textEdit->palette();
+        QPalette palette = m_savedTextEditPalette;
+        palette.setColor(QPalette::Highlight, QColor(0xff, 0x8f, 0x00)); // orange
+        palette.setColor(QPalette::HighlightedText, QColor(0x20, 0x20, 0x20));
+        m_textEdit->setPalette(palette);
+        m_selectionColorsOverridden = true;
+    }
+
     // Prefill with the current single-line selection in the edit, if any.
     const QString selected = m_textEdit->textCursor().selectedText();
     if (!selected.isEmpty() && !selected.contains(QChar::ParagraphSeparator)) {
@@ -96,6 +107,11 @@ void TextEditSearchBar::hideBar()
         QTextCursor cursor = m_textEdit->textCursor();
         cursor.clearSelection();
         m_textEdit->setTextCursor(cursor);
+        // Restore the original selection colours.
+        if (m_selectionColorsOverridden) {
+            m_textEdit->setPalette(m_savedTextEditPalette);
+            m_selectionColorsOverridden = false;
+        }
     }
     hide();
     if (wasVisible && !m_textEdit.isNull()) {
@@ -136,13 +152,14 @@ void TextEditSearchBar::updateHighlights()
         return;
     }
 
-    // Highlight every match in the document.
+    // Highlight every match in the document. Use a fixed, bright colour pair so
+    // matches stay readable on both light and dark themes (the theme's selection
+    // colour can be too dim to see, e.g. dark green on grey).
     auto* document = m_textEdit->document();
     QList<QTextEdit::ExtraSelection> selections;
     QTextCharFormat format;
-    QColor color = palette().color(QPalette::Highlight);
-    color.setAlpha(110);
-    format.setBackground(color);
+    format.setBackground(QColor(0xff, 0xd5, 0x4f)); // amber
+    format.setForeground(QColor(0x20, 0x20, 0x20));
 
     QTextCursor cursor(document);
     while (true) {

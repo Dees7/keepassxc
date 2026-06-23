@@ -18,6 +18,7 @@
 #ifndef KEEPASSXC_TEXTEDITSEARCHBAR_H
 #define KEEPASSXC_TEXTEDITSEARCHBAR_H
 
+#include <QPalette>
 #include <QPointer>
 #include <QScopedPointer>
 #include <QTextDocument>
@@ -68,6 +69,8 @@ private:
 
     QScopedPointer<Ui::TextEditSearchBar> m_ui;
     QPointer<QPlainTextEdit> m_textEdit;
+    QPalette m_savedTextEditPalette;
+    bool m_selectionColorsOverridden = false;
 };
 
 #endif // KEEPASSXC_TEXTEDITSEARCHBAR_H
