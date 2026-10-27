@@ -432,11 +432,21 @@ if(WIN32)
     target_sources(${PROGNAME} PUBLIC ${WIN32_ResourceFiles})
 
 elseif(APPLE AND WITH_APP_BUNDLE)
-    set(MACOSX_BUNDLE_IDENTIFIER org.keepassxc.keepassxc)
+    # The bundle id doubles as the App ID of the provisioning profile. Explicit App IDs are unique across all
+    # Apple teams, so a build signed by another team needs either a wildcard profile or its own bundle id.
+    set(WITH_XC_MACOS_BUNDLE_ID "org.keepassxc.keepassxc" CACHE STRING "macOS bundle identifier (App ID) of the app")
+    set(MACOSX_BUNDLE_IDENTIFIER ${WITH_XC_MACOS_BUNDLE_ID})
     set(MACOSX_BUNDLE_ICON_NAME keepassxc)
-    set(MACOSX_BUNDLE_APPLE_ENTITLEMENTS "${CMAKE_SOURCE_DIR}/share/macosx/keepassxc.entitlements")
+    # The entitlements and the embedded provisioning profile must belong to the team of the codesign
+    # identity, otherwise macOS kills the app at launch and Touch ID cannot use the keychain.
+    # Defaults are the KeePassXC Team values used for official releases.
+    set(WITH_XC_CODESIGN_TEAM_ID "G2S7P7J672" CACHE STRING "Apple Team ID written into the macOS entitlements")
+    set(WITH_XC_PROVISIONING_PROFILE "${CMAKE_SOURCE_DIR}/share/macosx/embedded.provisionprofile" CACHE FILEPATH
+        "Provisioning profile embedded into the app bundle, must be issued for WITH_XC_CODESIGN_TEAM_ID")
+    set(MACOSX_BUNDLE_APPLE_ENTITLEMENTS "${CMAKE_CURRENT_BINARY_DIR}/keepassxc.entitlements")
+    configure_file("${CMAKE_SOURCE_DIR}/share/macosx/keepassxc.entitlements.in" "${MACOSX_BUNDLE_APPLE_ENTITLEMENTS}" @ONLY)
     configure_file("${CMAKE_SOURCE_DIR}/share/macosx/Info.plist.in" ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
-    install(FILES "${CMAKE_SOURCE_DIR}/share/macosx/embedded.provisionprofile" DESTINATION ${BUNDLE_INSTALL_DIR})
+    install(FILES "${WITH_XC_PROVISIONING_PROFILE}" DESTINATION ${BUNDLE_INSTALL_DIR} RENAME embedded.provisionprofile)
     set(MACOSX_BUNDLE_RESOURCE_FILES
             "${CMAKE_SOURCE_DIR}/share/macosx/Assets.car"
             "${CMAKE_SOURCE_DIR}/share/macosx/keepassxc.icns"
@@ -456,6 +466,8 @@ elseif(APPLE AND WITH_APP_BUNDLE)
 
     # Sign binaries
     if(WITH_XC_CODESIGN_IDENTITY)
+        message(STATUS "macOS codesign: identity '${WITH_XC_CODESIGN_IDENTITY}', Team ID ${WITH_XC_CODESIGN_TEAM_ID}, "
+                       "profile ${WITH_XC_PROVISIONING_PROFILE}")
         configure_file("${CMAKE_SOURCE_DIR}/cmake/MacOSCodesign.cmake.in" "${CMAKE_BINARY_DIR}/MacOSCodesign.cmake" @ONLY)
         set(CPACK_PRE_BUILD_SCRIPTS "${CMAKE_BINARY_DIR}/MacOSCodesign.cmake")
         if(WITH_XC_NOTARY_KEYCHAIN_PROFILE)
