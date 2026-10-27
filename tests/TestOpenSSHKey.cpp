@@ -566,3 +566,67 @@ void TestOpenSSHKey::testParseED25519SecurityKey()
     QCOMPARE(key.fingerprint(), QString("SHA256:PGtS5WvbnYmNqFIeRbzO6cVP9GLh8eEzENgkHp02XIA"));
     QCOMPARE(keyString, key.privateKey());
 }
+
+void TestOpenSSHKey::testParseCertificatePublicKey()
+{
+    // Public key blobs as listed by an agent that holds OpenSSH certificates (`ssh-add -L`).
+    // Only the key signed by the certificate is kept, and like OpenSSH the fingerprint is
+    // computed from that key, so it equals the one of the plain key shown by `ssh-add -l`.
+    QByteArray ed25519Data = QByteArray::fromBase64(
+        "AAAAIHNzaC1lZDI1NTE5LWNlcnQtdjAxQG9wZW5zc2guY29tAAAAIEdBH7YbkCUq5IG4shCHqOTCQKMdiddQ/MZNYR1buncoAAAAII/9GrLG"
+        "OlaaLdenaawDLg9LfOBTdj9OW3a4gClF9yy+AAAAAAAAACoAAAABAAAAD29wZW5zc2hrZXktdGVzdAAAAAwAAAAIdGVzdHVzZXIAAAAAXgvS"
+        "8AAAAACDqnBwAAAAAAAAAIIAAAAVcGVybWl0LVgxMS1mb3J3YXJkaW5nAAAAAAAAABdwZXJtaXQtYWdlbnQtZm9yd2FyZGluZwAAAAAAAAAW"
+        "cGVybWl0LXBvcnQtZm9yd2FyZGluZwAAAAAAAAAKcGVybWl0LXB0eQAAAAAAAAAOcGVybWl0LXVzZXItcmMAAAAAAAAAAAAAADMAAAALc3No"
+        "LWVkMjU1MTkAAAAgsbL6n8wzjiHXY0MGyJshtRnsV2Z//8lg/8IrQJ4h0fYAAABTAAAAC3NzaC1lZDI1NTE5AAAAQCYHA/StvjvLmGV2/oh6"
+        "HlmJgpyKTwmo3g8ZVU3C+U2ee++O359/1gQlhzq5p4n87TjFfhhZtdlIg/eRIZVMQQA=");
+    BinaryStream ed25519Stream(&ed25519Data);
+
+    OpenSSHKey ed25519Key;
+    ed25519Key.setComment("opensshkey-test-ed25519-cert@keepassxc");
+    QVERIFY(ed25519Key.readPublic(ed25519Stream));
+    QCOMPARE(ed25519Key.type(), QString("ssh-ed25519"));
+    QCOMPARE(ed25519Key.fingerprint(), QString("SHA256:ZTiby44uJsWas8xQEm3lso6l76NQRFxTLIrPfO4a9PI"));
+    QCOMPARE(ed25519Key.publicKey(),
+             QString("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII/9GrLGOlaaLdenaawDLg9LfOBTdj9OW3a4gClF9yy+ "
+                     "opensshkey-test-ed25519-cert@keepassxc"));
+
+    QByteArray ecdsaData = QByteArray::fromBase64(
+        "AAAAKGVjZHNhLXNoYTItbmlzdHAyNTYtY2VydC12MDFAb3BlbnNzaC5jb20AAAAgzrgkt1FrVOd3CbqNzTQMj+z4D+bizi44rdfSJNq9Xx4A"
+        "AAAIbmlzdHAyNTYAAABBBJNE3BAlasvvYqZUPh0Rz/pWeFQnriXsWuNQxgeQfWI3FkIlqWkkzrqQ4WcNr0+MIwsLPPTUW3H8he6Ebf8RhzQA"
+        "AAAAAAAAKwAAAAEAAAAPb3BlbnNzaGtleS10ZXN0AAAADAAAAAh0ZXN0dXNlcgAAAABeC9LwAAAAAIOqcHAAAAAAAAAAggAAABVwZXJtaXQt"
+        "WDExLWZvcndhcmRpbmcAAAAAAAAAF3Blcm1pdC1hZ2VudC1mb3J3YXJkaW5nAAAAAAAAABZwZXJtaXQtcG9ydC1mb3J3YXJkaW5nAAAAAAAA"
+        "AApwZXJtaXQtcHR5AAAAAAAAAA5wZXJtaXQtdXNlci1yYwAAAAAAAAAAAAAAMwAAAAtzc2gtZWQyNTUxOQAAACCxsvqfzDOOIddjQwbImyG1"
+        "GexXZn//yWD/witAniHR9gAAAFMAAAALc3NoLWVkMjU1MTkAAABAeJrnQEXgdJZJ++ZVCGEIh4GFV/7r7+MAUX1TlQclkI0UQ2bM1yxj1fSe"
+        "VVrRPXkBlnNHmVvIAbBO5lmebFlEBA==");
+    BinaryStream ecdsaStream(&ecdsaData);
+
+    OpenSSHKey ecdsaKey;
+    ecdsaKey.setComment("opensshkey-test-ecdsa-cert@keepassxc");
+    QVERIFY(ecdsaKey.readPublic(ecdsaStream));
+    QCOMPARE(ecdsaKey.type(), QString("ecdsa-sha2-nistp256"));
+    QCOMPARE(ecdsaKey.fingerprint(), QString("SHA256:EekfwE43UF0c338FQFEgRoCwF7uBLuet1klbRhkeYek"));
+    QCOMPARE(ecdsaKey.publicKey(),
+             QString("ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJNE3BAlasvvYqZUPh0Rz/"
+                     "pWeFQnriXsWuNQxgeQfWI3FkIlqWkkzrqQ4WcNr0+MIwsLPPTUW3H8he6Ebf8RhzQ= "
+                     "opensshkey-test-ecdsa-cert@keepassxc"));
+
+    // A certificate of an unknown key type is still rejected, and so is a truncated one.
+    QByteArray unknownData;
+    BinaryStream unknownStream(&unknownData);
+    unknownStream.writeString(QString("ssh-unknown-cert-v01@openssh.com"));
+    unknownStream.writeString(QByteArray(32, 'n'));
+    BinaryStream unknownReadStream(&unknownData);
+
+    OpenSSHKey unknownKey;
+    QVERIFY(!unknownKey.readPublic(unknownReadStream));
+    QCOMPARE(unknownKey.errorString(), QString("Unknown key type: ssh-unknown-cert-v01@openssh.com"));
+
+    QByteArray truncatedData;
+    BinaryStream truncatedStream(&truncatedData);
+    truncatedStream.writeString(QString("ssh-ed25519-cert-v01@openssh.com"));
+    BinaryStream truncatedReadStream(&truncatedData);
+
+    OpenSSHKey truncatedKey;
+    QVERIFY(!truncatedKey.readPublic(truncatedReadStream));
+    QCOMPARE(truncatedKey.errorString(), QString("Unexpected EOF while reading public key"));
+}

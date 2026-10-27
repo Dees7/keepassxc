@@ -558,6 +558,7 @@ bool OpenSSHKey::readPublic(BinaryStream& stream)
         { "sk-ssh-ed25519@openssh.com",         {STR_PART, STR_PART} },
     };
     // clang-format on
+    static const QString certificateSuffix = "-cert-v01@openssh.com";
 
     m_rawPublicData.clear();
     BinaryStream rawPublicDataStream(&m_rawPublicData);
@@ -567,12 +568,31 @@ bool OpenSSHKey::readPublic(BinaryStream& stream)
         return false;
     }
 
-    if (!keyTemplates.contains(m_type)) {
+    // An OpenSSH certificate, as listed by an agent holding signed keys, wraps a plain
+    // public key: type, nonce, the key parts of the base type, then the certificate
+    // fields and the CA signature. Only the embedded key is kept. OpenSSH derives the
+    // fingerprint of a certificate from that key as well, so it matches `ssh-add -l`.
+    QString baseType = m_type;
+    const bool isCertificate = m_type.endsWith(certificateSuffix);
+    if (isCertificate) {
+        baseType.chop(certificateSuffix.length());
+    }
+
+    if (!keyTemplates.contains(baseType)) {
         m_error = tr("Unknown key type: %1").arg(m_type);
         return false;
     }
 
-    return readKeyParts(stream, keyTemplates[m_type], rawPublicDataStream);
+    if (isCertificate) {
+        QByteArray nonce;
+        if (!stream.readString(nonce)) {
+            m_error = tr("Unexpected EOF while reading public key");
+            return false;
+        }
+        m_type = baseType;
+    }
+
+    return readKeyParts(stream, keyTemplates[baseType], rawPublicDataStream);
 }
 
 bool OpenSSHKey::readPrivate(BinaryStream& stream)
